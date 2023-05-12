@@ -42,6 +42,6 @@ func DeleteEmployee(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "cannot delete this, as input is invalid", http.StatusInternalServerError)
 		return
 	}
-	log.Println("successfully deleted")
+	log.Printf("employee=[%s] successfully deleted", name)
 	w.WriteHeader(200)
 }
