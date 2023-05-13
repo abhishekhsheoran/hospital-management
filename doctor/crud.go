@@ -48,3 +48,37 @@ func DeleteDoc(w http.ResponseWriter, r *http.Request) {
 	log.Printf("doctor=[%s] deleted successfully", name)
 	w.WriteHeader(200)
 }
+
+func UpdateDoctor(w http.ResponseWriter, r *http.Request) {
+	m := mux.Vars(r)
+	name := m["name"]
+	var doc models.Doctor
+	err := json.NewDecoder(r.Body).Decode(&doc)
+	if err != nil {
+		log.Fatal("Error occured during updating doctor's name", "error =", err)
+	}
+	db := utils.Connection.Database(utils.HMDB)
+	collection := db.Collection(utils.DoctorColl)
+
+	filter := bson.M{"name": name}
+	res := collection.FindOne(r.Context(), filter)
+	if res.Err() != nil {
+		//
+	}
+	var docDB models.Doctor
+	err = res.Decode(&docDB)
+	if err != nil {
+		//
+	}
+
+	if doc.Name == collection.Name() && doc.Contact == collection.Contact {
+		updateID, err := collection.UpdateOne(context.TODO(), collection.Name(), doc.Name)
+		if err != nil {
+			log.Printf("error in inserting doctor's data  :: Error %s", err)
+			return
+		}
+		log.Printf("docotor's data is updated successfully", "update ID = %s", updateID)
+		w.WriteHeader(http.StatusOK)
+	}
+
+}
