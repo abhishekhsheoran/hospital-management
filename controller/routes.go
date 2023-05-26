@@ -15,6 +15,7 @@ func StartServer() {
 	router.HandleFunc("/api/v1/doctor/{name}", doctor.DeleteDoc).Methods(http.MethodDelete)
 	router.HandleFunc("/api/v1/patient", patient.CreatePatient).Methods(http.MethodPost)
 	router.HandleFunc("/api/v1/patient/{name}", patient.DeletePatient).Methods(http.MethodDelete)
+	router.HandleFunc("/api/v1/doctors", doctor.ListDoctors).Methods(http.MethodGet)
 	
 	log.Println(http.ListenAndServe(":8080", router))
 }
