@@ -97,6 +97,7 @@ func UpdateDoctor(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal("Error occured during decoding doctor's name of DB", "error =", err)
 	}
+	
 
 	// 	res = collection.FindOneAndUpdate(r.Context(), filter, docReq)
 	// 	if res.Err() != nil {
