@@ -20,7 +20,7 @@ func CreateDoctor(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	decoder.Decode(&doc)
 	if doc.Name == "" {
-		http.Error(w, "name field can not be empty", http.StatusBadRequest)
+		http.Error(w, "name field can not be empty", (400))
 		return
 	}
 	db := utils.Connection.Database(utils.HMDB)
@@ -28,12 +28,11 @@ func CreateDoctor(w http.ResponseWriter, r *http.Request) {
 
 	res, err := collection.InsertOne(context.Background(), doc)
 	if err != nil {
-		log.Printf("error occurred while inserting doctor data, for name=%s, :: ERROR:%v\n", doc.Name, err)
-		http.Error(w, "error while creating data", http.StatusInternalServerError)
+		http.Error(w, "error while creating data", 500)
 		return
 	}
 	log.Printf("Doctor created successfully with id:%v\n", res.InsertedID)
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(201)
 }
 
 func DeleteDoc(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +43,7 @@ func DeleteDoc(w http.ResponseWriter, r *http.Request) {
 	filter := bson.M{"name": name}
 	_, err := collection.DeleteOne(context.TODO(), filter)
 	if err != nil {
-		http.Error(w, "delete one ended with error", http.StatusInternalServerError)
+		http.Error(w, "delete one ended with error", 500)
 		return
 	}
 	log.Printf("doctor=[%s] deleted successfully", name)
@@ -61,15 +60,15 @@ func ListDoctors(w http.ResponseWriter, r *http.Request) {
 	var options = options.FindOptions{Limit: &limitInt64}
 	records, err := collection.Find(r.Context(), bson.M{}, &options)
 	if err != nil {
-		log.Fatal("record not found", err)
+		log.Fatal("record not found", err, 404)
 	}
 	var foundedRecords []models.Doctor
 	err = records.All(r.Context(), &foundedRecords)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err, 404)
 	}
 	b, err := json.Marshal(foundedRecords)
-	if err != nil{
+	if err != nil {
 		log.Fatal("error occured while converting into byte", err)
 	}
 	w.Write(b)
@@ -90,21 +89,20 @@ func UpdateDoctor(w http.ResponseWriter, r *http.Request) {
 	filter := bson.M{"name": name, "contact": contact}
 	res := collection.FindOne(r.Context(), filter)
 	if res.Err() != nil {
-		log.Fatal("Error occured during finding doctor's name from DB", "error =", err)
+		log.Fatal("Error occured during finding doctor's name from DB", "error =", err, 404)
 	}
 	var docDB models.Doctor
 	err = res.Decode(&docDB)
 	if err != nil {
 		log.Fatal("Error occured during decoding doctor's name of DB", "error =", err)
 	}
-	
 
 	// 	res = collection.FindOneAndUpdate(r.Context(), filter, docReq)
 	// 	if res.Err() != nil {
 	// log.Fatal("Error occured during updating doctor's name", "error =", err)
 	// 	}
-
 	docDB.Name = docReq.Name
 	docDB.Contact = docReq.Contact
+	collection.UpdateOne(context.TODO(), filter, doc)
 
 }
