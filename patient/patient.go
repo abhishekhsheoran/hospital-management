@@ -16,19 +16,19 @@ func CreatePatient(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&pat)
 	if err != nil {
-		log.Println("invalid input")
+		log.Println("invalid input", http.StatusBadRequest)
 		return
 	}
 	db := utils.Connection.Database(utils.HMDB)
 	collection := db.Collection(utils.Patients)
 	succ, err := collection.InsertOne(r.Context(), pat)
 	if err != nil {
-		log.Println("name of patient is not found")
+		log.Println("name of patient is not found", http.StatusNotFound)
 		http.Error(w, "error while creating data", http.StatusInternalServerError)
 		return
 	}
 	log.Println("patient successfully added", succ.InsertedID)
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 
 }
 
@@ -39,9 +39,9 @@ func DeletePatient(w http.ResponseWriter, r *http.Request) {
 	filter := bson.M{"name": name}
 	_, err := collection.DeleteOne(r.Context(), filter)
 	if err != nil {
-		http.Error(w, "can not delete this one", 400)
+		http.Error(w, "can not delete this one", http.StatusBadRequest)
 		return
 	}
 	log.Println("deleted successfully", name)
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 }

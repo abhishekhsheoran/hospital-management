@@ -1,10 +1,14 @@
 package models
 
+import "time"
+
 type Doctor struct {
-	Name    string
-	Age     int
-	Contact int
-	Address []Address
+	Name      string
+	Age       int
+	Contact   int
+	Address   []Address
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Address struct {

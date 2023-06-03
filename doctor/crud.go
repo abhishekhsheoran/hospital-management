@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 
@@ -18,21 +19,27 @@ import (
 func CreateDoctor(w http.ResponseWriter, r *http.Request) {
 	var doc models.Doctor
 	decoder := json.NewDecoder(r.Body)
-	decoder.Decode(&doc)
-	if doc.Name == "" {
-		http.Error(w, "name field can not be empty", (400))
+	err := decoder.Decode(&doc)
+	if err != nil {
+		log.Println("JSON marshal err ", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if doc.Name == "" {
+		http.Error(w, "name field can not be empty", http.StatusBadRequest)
+		return
+	}
+	doc.CreatedAt = time.Now()
 	db := utils.Connection.Database(utils.HMDB)
 	collection := db.Collection(utils.DoctorColl)
 
 	res, err := collection.InsertOne(context.Background(), doc)
 	if err != nil {
-		http.Error(w, "error while creating data", 500)
+		http.Error(w, "error while creating data", http.StatusInternalServerError)
 		return
 	}
 	log.Printf("Doctor created successfully with id:%v\n", res.InsertedID)
-	w.WriteHeader(201)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func DeleteDoc(w http.ResponseWriter, r *http.Request) {
@@ -43,11 +50,11 @@ func DeleteDoc(w http.ResponseWriter, r *http.Request) {
 	filter := bson.M{"name": name}
 	_, err := collection.DeleteOne(context.TODO(), filter)
 	if err != nil {
-		http.Error(w, "delete one ended with error", 500)
+		http.Error(w, "delete one ended with error", http.StatusInternalServerError)
 		return
 	}
 	log.Printf("doctor=[%s] deleted successfully", name)
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 }
 
 // inp = doctor list, offset=10, limit
@@ -60,16 +67,16 @@ func ListDoctors(w http.ResponseWriter, r *http.Request) {
 	var options = options.FindOptions{Limit: &limitInt64}
 	records, err := collection.Find(r.Context(), bson.M{}, &options)
 	if err != nil {
-		log.Fatal("record not found", err, 404)
+		log.Fatal("record not found", err, http.StatusNotFound)
 	}
 	var foundedRecords []models.Doctor
 	err = records.All(r.Context(), &foundedRecords)
 	if err != nil {
-		log.Fatal(err, 404)
+		log.Fatal(err, http.StatusNotFound)
 	}
 	b, err := json.Marshal(foundedRecords)
 	if err != nil {
-		log.Fatal("error occured while converting into byte", err)
+		log.Fatal("error occured while converting into byte", err, http.StatusInternalServerError)
 	}
 	w.Write(b)
 }
@@ -81,7 +88,7 @@ func UpdateDoctor(w http.ResponseWriter, r *http.Request) {
 	var docReq models.Doctor
 	err := json.NewDecoder(r.Body).Decode(&docReq)
 	if err != nil {
-		log.Fatal("Error occured during updating doctor's name", "error =", err)
+		log.Fatal("Error occured during updating doctor's name", "error =", err, http.StatusInternalServerError)
 	}
 	db := utils.Connection.Database(utils.HMDB)
 	collection := db.Collection(utils.DoctorColl)
@@ -89,7 +96,7 @@ func UpdateDoctor(w http.ResponseWriter, r *http.Request) {
 	filter := bson.M{"name": name, "contact": contact}
 	res := collection.FindOne(r.Context(), filter)
 	if res.Err() != nil {
-		log.Fatal("Error occured during finding doctor's name from DB", "error =", err, 404)
+		log.Fatal("Error occured during finding doctor's name from DB", "error =", err, http.StatusNotFound)
 	}
 	var docDB models.Doctor
 	err = res.Decode(&docDB)
@@ -103,6 +110,10 @@ func UpdateDoctor(w http.ResponseWriter, r *http.Request) {
 	// 	}
 	docDB.Name = docReq.Name
 	docDB.Contact = docReq.Contact
-	collection.UpdateOne(context.TODO(), filter, doc)
-
+	docDB.UpdatedAt = time.Now()
+	_,err=collection.UpdateOne(context.TODO(), filter, docDB)
+	if err !=nil{
+log.Fatal("error occured during updating the record,  error =", err, http.StatusInternalServerError)
+	}
+w.WriteHeader(http.StatusOK)
 }
