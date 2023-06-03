@@ -39,9 +39,9 @@ func DeleteEmployee(w http.ResponseWriter, r *http.Request) {
 	filter := bson.M{"name": name}
 	_, err := collection.DeleteOne(context.TODO(), filter)
 	if err != nil {
-		http.Error(w, "cannot delete this, as input is invalid", http.StatusInternalServerError)
+		http.Error(w, "cannot delete this, as input is invalid", http.StatusBadRequest)
 		return
 	}
 	log.Printf("employee=[%s] successfully deleted", name)
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 }
